@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "allow": ["Bash(git -c core.safecrlf=false commit -q -m ' *)"]
+  }
+}
