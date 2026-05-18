@@ -1,6 +1,8 @@
 # ADR-0005: API — REST + OpenAPI contract-first
 
-Status: Accepted — 2026-05-18
+Status: Accepted — 2026-05-18 · **Refined by [ADR-0012](0012-openapi-code-first.md)
+(2026-05-18): the OpenAPI document is now generated code-first from NestJS,
+not hand-written. REST + published-contract intent is unchanged.**
 
 ## Context
 

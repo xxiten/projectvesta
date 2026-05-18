@@ -1,6 +1,11 @@
-// Baseline schema. Tenant is the isolation root; every tenant-scoped table
-// carries tenant_id and is protected by row-level security (see the init
-// migration). Domain tables are added per epic (E1+).
+// Tenant is the isolation root; every tenant-scoped table carries tenant_id and
+// is protected by row-level security (see migrations). Domain tables are added
+// per iteration — migrations are hand-written (RLS is not modelled by Prisma),
+// so this schema and the SQL in prisma/migrations MUST stay in lockstep.
+//
+// Convention: new tenant-scoped models use a plain `tenantId` column (FK + RLS
+// enforced in SQL) rather than a Prisma relation to Tenant, to avoid bloating
+// the Tenant model with back-relations. Domain-to-domain relations ARE modelled.
 
 generator client {
   provider = "prisma-client-js"
@@ -11,10 +16,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ReservationStatus {
+  enquiry
+  confirmed
+  cancelled
+  checked_in
+  checked_out
+  no_show
+
+  @@map("reservation_status")
+}
+
 model Tenant {
   id        String     @id @default(uuid()) @db.Uuid
   name      String
-  createdAt DateTime    @default(now()) @map("created_at")
+  createdAt DateTime   @default(now()) @map("created_at")
   users     AppUser[]
   auditLogs AuditLog[]
 
@@ -22,12 +38,17 @@ model Tenant {
 }
 
 model AppUser {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  email     String
-  createdAt DateTime @default(now()) @map("created_at")
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  id           String     @id @default(uuid()) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  email        String
+  name         String?
+  passwordHash String?    @map("password_hash")
+  status       String     @default("active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  tenant       Tenant     @relation(fields: [tenantId], references: [id])
+  roles        UserRole[]
 
+  @@unique([tenantId, email])
   @@index([tenantId])
   @@map("app_user")
 }
@@ -41,4 +62,268 @@ model AuditLog {
 
   @@index([tenantId])
   @@map("audit_log")
+}
+
+// ── Identity & Access (RBAC schema; not yet enforced — see plan decision 7) ──
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @map("tenant_id") @db.Uuid
+  name        String
+  createdAt   DateTime         @default(now()) @map("created_at")
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("role")
+}
+
+// Global permission catalog (not tenant-scoped).
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+model UserRole {
+  userId    String  @map("user_id") @db.Uuid
+  roleId    String  @map("role_id") @db.Uuid
+  tenantId  String  @map("tenant_id") @db.Uuid
+  user      AppUser @relation(fields: [userId], references: [id])
+  role      Role    @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@index([tenantId])
+  @@map("user_role")
+}
+
+// ── Property setup ──
+
+model Property {
+  id           String        @id @default(uuid()) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  name         String
+  timezone     String        @default("Europe/Rome")
+  currency     String        @default("EUR")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  roomTypes    RoomType[]
+  rooms        Room[]
+  ratePlans    RatePlan[]
+  reservations Reservation[]
+
+  @@index([tenantId])
+  @@map("property")
+}
+
+model RoomType {
+  id           String        @id @default(uuid()) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  propertyId   String        @map("property_id") @db.Uuid
+  code         String
+  name         String
+  capacity     Int           @default(2)
+  totalUnits   Int           @map("total_units")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  property     Property      @relation(fields: [propertyId], references: [id])
+  rooms        Room[]
+  reservations Reservation[]
+  stays        Stay[]
+
+  @@unique([propertyId, code])
+  @@index([tenantId])
+  @@map("room_type")
+}
+
+model Room {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  roomTypeId String   @map("room_type_id") @db.Uuid
+  number     String
+  status     String   @default("clean")
+  property   Property @relation(fields: [propertyId], references: [id])
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id])
+  stays      Stay[]
+
+  @@unique([propertyId, number])
+  @@index([tenantId])
+  @@map("room")
+}
+
+model RatePlan {
+  id              String        @id @default(uuid()) @db.Uuid
+  tenantId        String        @map("tenant_id") @db.Uuid
+  propertyId      String        @map("property_id") @db.Uuid
+  code            String
+  name            String
+  currency        String        @default("EUR")
+  baseAmountMinor Int           @map("base_amount_minor")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  property        Property      @relation(fields: [propertyId], references: [id])
+  reservations    Reservation[]
+
+  @@unique([propertyId, code])
+  @@index([tenantId])
+  @@map("rate_plan")
+}
+
+// ── Guests & Reservations ──
+
+model Guest {
+  id           String        @id @default(uuid()) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  firstName    String        @map("first_name")
+  lastName     String        @map("last_name")
+  email        String?
+  phone        String?
+  countryCode  String?       @map("country_code")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  reservations Reservation[]
+
+  @@index([tenantId])
+  @@map("guest")
+}
+
+model Reservation {
+  id               String            @id @default(uuid()) @db.Uuid
+  tenantId         String            @map("tenant_id") @db.Uuid
+  propertyId       String            @map("property_id") @db.Uuid
+  roomTypeId       String            @map("room_type_id") @db.Uuid
+  ratePlanId       String            @map("rate_plan_id") @db.Uuid
+  guestId          String            @map("guest_id") @db.Uuid
+  status           ReservationStatus @default(enquiry)
+  arrival          DateTime          @db.Date
+  departure        DateTime          @db.Date
+  adults           Int               @default(2)
+  children         Int               @default(0)
+  totalAmountMinor Int               @map("total_amount_minor")
+  currency         String            @default("EUR")
+  source           String            @default("direct")
+  externalRef      String?           @map("external_ref")
+  notes            String?
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  property         Property          @relation(fields: [propertyId], references: [id])
+  roomType         RoomType          @relation(fields: [roomTypeId], references: [id])
+  ratePlan         RatePlan          @relation(fields: [ratePlanId], references: [id])
+  guest            Guest             @relation(fields: [guestId], references: [id])
+  stays            Stay[]
+  invoices         Invoice[]
+
+  @@index([tenantId])
+  @@index([propertyId, arrival])
+  @@map("reservation")
+}
+
+model Stay {
+  id            String      @id @default(uuid()) @db.Uuid
+  tenantId      String      @map("tenant_id") @db.Uuid
+  reservationId String      @map("reservation_id") @db.Uuid
+  roomTypeId    String      @map("room_type_id") @db.Uuid
+  roomId        String?     @map("room_id") @db.Uuid
+  checkIn       DateTime    @map("check_in") @db.Date
+  checkOut      DateTime    @map("check_out") @db.Date
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  roomType      RoomType    @relation(fields: [roomTypeId], references: [id])
+  room          Room?       @relation(fields: [roomId], references: [id])
+
+  @@index([tenantId])
+  @@map("stay")
+}
+
+// ── Billing (minimal; folio/compliance later) ──
+
+model Invoice {
+  id            String      @id @default(uuid()) @db.Uuid
+  tenantId      String      @map("tenant_id") @db.Uuid
+  reservationId String      @map("reservation_id") @db.Uuid
+  number        String
+  status        String      @default("draft")
+  totalMinor    Int         @map("total_minor")
+  currency      String      @default("EUR")
+  issuedAt      DateTime?   @map("issued_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  payments      Payment[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@map("invoice")
+}
+
+model Payment {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  invoiceId  String   @map("invoice_id") @db.Uuid
+  amountMinor Int     @map("amount_minor")
+  currency   String   @default("EUR")
+  method     String   @default("cash")
+  status     String   @default("captured")
+  createdAt  DateTime @default(now()) @map("created_at")
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id])
+
+  @@index([tenantId])
+  @@map("payment")
+}
+
+// ── Integrations ──
+
+model IntegrationConnection {
+  id           String            @id @default(uuid()) @db.Uuid
+  tenantId     String            @map("tenant_id") @db.Uuid
+  connectorKey String            @map("connector_key")
+  displayName  String            @map("display_name")
+  status       String            @default("disconnected")
+  config       Json?
+  createdAt    DateTime          @default(now()) @map("created_at")
+  mappings     ExternalMapping[]
+  inbox        IntegrationInbox[]
+
+  @@unique([tenantId, connectorKey])
+  @@index([tenantId])
+  @@map("integration_connection")
+}
+
+model ExternalMapping {
+  id           String                @id @default(uuid()) @db.Uuid
+  tenantId     String                @map("tenant_id") @db.Uuid
+  connectionId String                @map("connection_id") @db.Uuid
+  entityType   String                @map("entity_type")
+  internalId   String                @map("internal_id")
+  externalId   String                @map("external_id")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  connection   IntegrationConnection @relation(fields: [connectionId], references: [id])
+
+  @@unique([connectionId, entityType, externalId])
+  @@index([tenantId])
+  @@map("external_mapping")
+}
+
+model IntegrationInbox {
+  id           String                @id @default(uuid()) @db.Uuid
+  tenantId     String                @map("tenant_id") @db.Uuid
+  connectionId String                @map("connection_id") @db.Uuid
+  dedupKey     String                @map("dedup_key")
+  payload      Json
+  status       String                @default("received")
+  receivedAt   DateTime              @default(now()) @map("received_at")
+  connection   IntegrationConnection @relation(fields: [connectionId], references: [id])
+
+  @@unique([connectionId, dedupKey])
+  @@index([tenantId])
+  @@map("integration_inbox")
 }

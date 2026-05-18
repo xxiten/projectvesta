@@ -31,7 +31,10 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/consistent-type-imports': 'error',
+      // Off by design: NestJS DI relies on emitDecoratorMetadata, so classes
+      // used only in constructor/param type positions still need a *value*
+      // import. consistent-type-imports cannot see that and would break DI.
+      '@typescript-eslint/consistent-type-imports': 'off',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       eqeqeq: ['error', 'smart'],
     },

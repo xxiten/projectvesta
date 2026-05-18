@@ -79,7 +79,16 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(\\.spec\\.ts|\\.test\\.ts|\\.e2e-spec\\.ts)$' },
+    exclude: {
+      path: [
+        '\\.spec\\.ts$',
+        '\\.test\\.ts$',
+        '\\.e2e-spec\\.ts$',
+        '(^|/)(dist|\\.next|\\.turbo|coverage)/',
+        '(^|/)prisma/(seed|migrations)',
+        '(^|/)scripts/',
+      ],
+    },
     // depcruise's own TS parser detects imports (incl. `import type`), which is
     // sufficient for boundary checks. No path aliases are used in module code,
     // so a tsconfig program is unnecessary here.
