@@ -24,7 +24,7 @@ export class DevController {
     userId: string;
     email: string;
   }> {
-    if (this.config.NODE_ENV === 'production') {
+    if (!this.config.VESTA_ENABLE_DEV_AUTH) {
       throw new NotFoundException();
     }
     const tenant = await this.prisma.tenant.findFirst({ orderBy: { createdAt: 'asc' } });

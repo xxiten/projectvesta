@@ -15,6 +15,13 @@ const schema = z.object({
   REDIS_URL: z.string().url().default('redis://localhost:6379'),
   AUTH_JWT_SECRET: z.string().min(32),
   AUTH_JWT_TTL: z.coerce.number().int().positive().default(3600),
+  // Enables the DEV-only /dev/context bootstrap (placeholder login). Off by
+  // default — intentionally independent of NODE_ENV so a "production-like"
+  // sandbox VM can opt in without weakening real production.
+  VESTA_ENABLE_DEV_AUTH: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 export type AppConfig = z.infer<typeof schema>;
