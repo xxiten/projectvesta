@@ -25,4 +25,16 @@ describe('reservation domain', () => {
     expect(canTransition('checked_out', 'confirmed')).toBe(false);
     expect(canTransition('cancelled', 'confirmed')).toBe(false);
   });
+
+  it('allows the room-rack check-in / check-out path', () => {
+    expect(canTransition('confirmed', 'checked_in')).toBe(true);
+    expect(canTransition('checked_in', 'checked_out')).toBe(true);
+  });
+
+  it('forbids check-in/out from terminal or wrong states', () => {
+    expect(canTransition('enquiry', 'checked_in')).toBe(false);
+    expect(canTransition('confirmed', 'checked_out')).toBe(false);
+    expect(canTransition('checked_out', 'checked_in')).toBe(false);
+    expect(canTransition('no_show', 'checked_in')).toBe(false);
+  });
 });

@@ -27,6 +27,23 @@ enum ReservationStatus {
   @@map("reservation_status")
 }
 
+enum RoomHousekeepingStatus {
+  clean
+  dirty
+  inspected
+  out_of_order
+
+  @@map("room_housekeeping_status")
+}
+
+enum RoomBlockReason {
+  maintenance
+  out_of_order
+  hold
+
+  @@map("room_block_reason")
+}
+
 model Tenant {
   id        String     @id @default(uuid()) @db.Uuid
   name      String
@@ -124,6 +141,7 @@ model Property {
   rooms        Room[]
   ratePlans    RatePlan[]
   reservations Reservation[]
+  roomBlocks   RoomBlock[]
 
   @@index([tenantId])
   @@map("property")
@@ -149,15 +167,16 @@ model RoomType {
 }
 
 model Room {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @map("tenant_id") @db.Uuid
-  propertyId String   @map("property_id") @db.Uuid
-  roomTypeId String   @map("room_type_id") @db.Uuid
+  id         String                 @id @default(uuid()) @db.Uuid
+  tenantId   String                 @map("tenant_id") @db.Uuid
+  propertyId String                 @map("property_id") @db.Uuid
+  roomTypeId String                 @map("room_type_id") @db.Uuid
   number     String
-  status     String   @default("clean")
-  property   Property @relation(fields: [propertyId], references: [id])
-  roomType   RoomType @relation(fields: [roomTypeId], references: [id])
+  status     RoomHousekeepingStatus @default(clean)
+  property   Property               @relation(fields: [propertyId], references: [id])
+  roomType   RoomType               @relation(fields: [roomTypeId], references: [id])
   stays      Stay[]
+  blocks     RoomBlock[]
 
   @@unique([propertyId, number])
   @@index([tenantId])
@@ -243,6 +262,24 @@ model Stay {
 
   @@index([tenantId])
   @@map("stay")
+}
+
+model RoomBlock {
+  id         String          @id @default(uuid()) @db.Uuid
+  tenantId   String          @map("tenant_id") @db.Uuid
+  propertyId String          @map("property_id") @db.Uuid
+  roomId     String          @map("room_id") @db.Uuid
+  startDate  DateTime        @map("start_date") @db.Date
+  endDate    DateTime        @map("end_date") @db.Date
+  reason     RoomBlockReason
+  note       String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+  property   Property        @relation(fields: [propertyId], references: [id])
+  room       Room            @relation(fields: [roomId], references: [id])
+
+  @@index([tenantId])
+  @@index([roomId, startDate])
+  @@map("room_block")
 }
 
 // ── Billing (minimal; folio/compliance later) ──

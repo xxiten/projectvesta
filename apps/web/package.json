@@ -7,10 +7,13 @@
     "build": "next build",
     "start": "next start -p 3000",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint app lib",
+    "lint": "eslint app lib features",
     "test": "echo \"no web tests yet\""
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@tanstack/react-virtual": "^3.13.0",
     "@vesta/api-contracts": "workspace:*",
     "@vesta/design-system": "workspace:*",
     "@vesta/i18n": "workspace:*",

@@ -1,17 +1,26 @@
 import {
   API_ROUTES,
+  type AssignStayInput,
   type CreatePropertyInput,
   type CreateReservationInput,
+  type CreateRoomBlockInput,
+  type CreateRoomInput,
   type HealthStatus,
   type PropertyDto,
   type RatePlanDto,
   type ReservationDto,
+  type ResizeStayInput,
+  type RoomBlockDto,
+  type RoomDto,
+  type RoomRackDto,
   type RoomTypeDto,
+  type StayMutationResultDto,
   type TenantDto,
+  type UpdateHousekeepingInput,
 } from '@vesta/api-contracts';
 
-// Same-origin: Next rewrites /api/* to the API service (see next.config.mjs).
-// No build-time API URL → the web image is portable across environments.
+// Same-origin: a Next route handler proxies /api/* to the API service at
+// request time → the web image is portable across environments.
 const BASE_URL = '/api';
 
 /** Dev-header scope (placeholder auth — see api auth-port.ts / plan decision 7). */
@@ -48,6 +57,9 @@ async function request<T>(
       /* non-JSON error */
     }
     throw new Error(msg);
+  }
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return undefined as T;
   }
   return (await res.json()) as T;
 }
@@ -95,6 +107,52 @@ export const api = {
     request<unknown>(`${API_ROUTES.integrations}/webhooks/${connectorKey}`, {
       method: 'POST',
       body: payload,
+      scope,
+    }),
+
+  // ── Room rack ──
+  roomRack: (scope: Scope, propertyId: string, from: string, to: string) =>
+    request<RoomRackDto>(`${API_ROUTES.roomRack(propertyId)}?from=${from}&to=${to}`, { scope }),
+  listRooms: (scope: Scope, propertyId: string) =>
+    request<RoomDto[]>(API_ROUTES.rooms(propertyId), { scope }),
+  createRoom: (scope: Scope, propertyId: string, body: CreateRoomInput) =>
+    request<RoomDto>(API_ROUTES.rooms(propertyId), { method: 'POST', body, scope }),
+  assignStay: (scope: Scope, stayId: string, body: AssignStayInput) =>
+    request<StayMutationResultDto>(API_ROUTES.stayAssignment(stayId), {
+      method: 'PATCH',
+      body,
+      scope,
+    }),
+  resizeStay: (scope: Scope, stayId: string, body: ResizeStayInput) =>
+    request<StayMutationResultDto>(API_ROUTES.stayResize(stayId), {
+      method: 'PATCH',
+      body,
+      scope,
+    }),
+  checkIn: (scope: Scope, reservationId: string, stayId: string) =>
+    request<StayMutationResultDto>(API_ROUTES.reservationCheckIn(reservationId), {
+      method: 'POST',
+      body: { stayId },
+      scope,
+    }),
+  checkOut: (scope: Scope, reservationId: string, stayId: string) =>
+    request<StayMutationResultDto>(API_ROUTES.reservationCheckOut(reservationId), {
+      method: 'POST',
+      body: { stayId },
+      scope,
+    }),
+  createRoomBlock: (scope: Scope, propertyId: string, body: CreateRoomBlockInput) =>
+    request<RoomBlockDto>(API_ROUTES.roomBlocks(propertyId), {
+      method: 'POST',
+      body,
+      scope,
+    }),
+  deleteRoomBlock: (scope: Scope, id: string) =>
+    request<void>(API_ROUTES.roomBlock(id), { method: 'DELETE', scope }),
+  setHousekeeping: (scope: Scope, roomId: string, body: UpdateHousekeepingInput) =>
+    request<RoomDto>(API_ROUTES.roomHousekeeping(roomId), {
+      method: 'PATCH',
+      body,
       scope,
     }),
 };

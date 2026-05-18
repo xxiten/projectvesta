@@ -1,6 +1,7 @@
 {
   "app.name": "Vesta",
   "nav.dashboard": "Dashboard",
+  "nav.roomrack": "Zimmerplan",
   "nav.calendar": "Belegung",
   "nav.reservations": "Reservierungen",
   "nav.guests": "Gäste",

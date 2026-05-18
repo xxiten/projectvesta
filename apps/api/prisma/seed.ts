@@ -77,7 +77,7 @@ async function main(): Promise<void> {
         totalUnits: 8,
       },
     });
-    await tx.roomType.upsert({
+    const suite = await tx.roomType.upsert({
       where: { propertyId_code: { propertyId: property.id, code: 'SUITE' } },
       update: {},
       create: {
@@ -89,6 +89,26 @@ async function main(): Promise<void> {
         totalUnits: 3,
       },
     });
+
+    // Physical rooms (the rack rows). Numbers stable so upsert is idempotent.
+    const roomPlan: { roomType: typeof standard; numbers: string[] }[] = [
+      { roomType: standard, numbers: ['101', '102', '103', '104', '105', '106', '107', '108'] },
+      { roomType: suite, numbers: ['201', '202', '203'] },
+    ];
+    for (const { roomType, numbers } of roomPlan) {
+      for (const number of numbers) {
+        await tx.room.upsert({
+          where: { propertyId_number: { propertyId: property.id, number } },
+          update: {},
+          create: {
+            tenantId: tenant.id,
+            propertyId: property.id,
+            roomTypeId: roomType.id,
+            number,
+          },
+        });
+      }
+    }
 
     const ratePlan = await tx.ratePlan.upsert({
       where: { propertyId_code: { propertyId: property.id, code: 'BAR' } },
@@ -117,6 +137,9 @@ async function main(): Promise<void> {
 
     const existing = await tx.reservation.count({ where: { tenantId: tenant.id } });
     if (existing === 0) {
+      const room101 = await tx.room.findFirst({
+        where: { propertyId: property.id, number: '101' },
+      });
       const arrival = new Date('2026-06-12');
       const departure = new Date('2026-06-15');
       const nights = 3;
@@ -137,6 +160,7 @@ async function main(): Promise<void> {
             create: {
               tenantId: tenant.id,
               roomTypeId: standard.id,
+              ...(room101 ? { roomId: room101.id } : {}),
               checkIn: arrival,
               checkOut: departure,
             },

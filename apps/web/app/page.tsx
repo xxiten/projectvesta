@@ -9,11 +9,11 @@ export default function MarketingHome() {
         Hotelmanagement, ruhig und schnell.
       </h1>
       <p className="text-lg text-neutral-700">
-        Reservierung, Front Desk, Housekeeping und Abrechnung in einer klaren,
-        tastaturfreundlichen Oberfläche. Südtirol-first, international vorbereitet.
+        Reservierung, Front Desk, Housekeeping und Abrechnung in einer klaren, tastaturfreundlichen
+        Oberfläche. Südtirol-first, international vorbereitet.
       </p>
-      <Link href="/dashboard">
-        <Button>Zum Dashboard</Button>
+      <Link href="/plan">
+        <Button>Zum Zimmerplan</Button>
       </Link>
     </main>
   );

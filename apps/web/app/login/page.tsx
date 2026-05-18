@@ -23,7 +23,7 @@ export default function LoginPage() {
     try {
       const c = await api.devContext();
       setCtx({ tenantId: c.tenantId, userId: c.userId, tenantName: c.tenantName });
-      router.replace('/dashboard');
+      router.replace('/plan');
     } catch (e) {
       setError((e as Error).message);
       setLoading(false);

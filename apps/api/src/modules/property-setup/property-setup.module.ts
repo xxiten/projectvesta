@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { PropertyController } from './property.controller';
+import { PropertyController, RoomController } from './property.controller';
 import { PropertyService } from './property.service';
 
 /** Property, room types and rooms configuration (supporting subdomain). */
 @Module({
-  controllers: [PropertyController],
+  controllers: [PropertyController, RoomController],
   providers: [PropertyService],
   exports: [PropertyService],
 })

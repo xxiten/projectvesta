@@ -10,6 +10,7 @@ import { useTenant } from '@/lib/tenant-context';
 const t = getMessages(DEFAULT_LOCALE);
 
 const NAV = [
+  { href: '/plan', label: t['nav.roomrack'] },
   { href: '/dashboard', label: t['nav.dashboard'] },
   { href: '/reservations', label: t['nav.reservations'] },
   { href: '/properties', label: 'Properties' },
@@ -42,6 +43,7 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
   return (
     <>
       <AppShell
+        fluid={pathname === '/plan' || pathname.startsWith('/plan/')}
         brand={<span className="text-neutral-900">{t['app.name']}</span>}
         sidebar={
           <div className="flex flex-col gap-0.5">
