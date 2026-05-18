@@ -1,0 +1,15 @@
+# Normalize line endings to LF across platforms (CI is Linux; dev may be
+# Windows). Matches Prettier (endOfLine: lf) and .editorconfig.
+* text=auto eol=lf
+
+# Binary assets — never normalize
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+
+pnpm-lock.yaml -diff linguist-generated
