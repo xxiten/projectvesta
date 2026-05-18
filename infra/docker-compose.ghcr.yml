@@ -10,6 +10,7 @@
 services:
   api:
     image: ${VESTA_IMAGE_PREFIX:-ghcr.io/xxiten/vesta}-api:${VESTA_IMAGE_TAG:-latest}
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       VESTA_DEPLOYMENT_MODE: ${VESTA_DEPLOYMENT_MODE:-self-host}
@@ -28,6 +29,7 @@ services:
 
   worker:
     image: ${VESTA_IMAGE_PREFIX:-ghcr.io/xxiten/vesta}-worker:${VESTA_IMAGE_TAG:-latest}
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       REDIS_URL: redis://redis:6379
@@ -37,6 +39,7 @@ services:
 
   web:
     image: ${VESTA_IMAGE_PREFIX:-ghcr.io/xxiten/vesta}-web:${VESTA_IMAGE_TAG:-latest}
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       API_PROXY_TARGET: http://api:3001

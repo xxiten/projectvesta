@@ -6,6 +6,7 @@ services:
     build:
       context: ..
       dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       VESTA_DEPLOYMENT_MODE: self-host
@@ -26,6 +27,7 @@ services:
     build:
       context: ..
       dockerfile: apps/worker/Dockerfile
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       REDIS_URL: redis://redis:6379
@@ -37,6 +39,7 @@ services:
     build:
       context: ..
       dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       API_PROXY_TARGET: http://api:3001
