@@ -1,0 +1,7 @@
+{
+  "extends": "@vesta/tsconfig/library.json",
+  "compilerOptions": {
+    "resolveJsonModule": true
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --vesta-bg: #f7f7f6;
+  --vesta-surface: #ffffff;
+  --vesta-text: #1c1c1a;
+  --vesta-muted: #8a8a83;
+}
+
+@layer base {
+  body {
+    background-color: var(--vesta-bg);
+    color: var(--vesta-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

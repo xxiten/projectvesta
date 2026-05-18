@@ -1,0 +1,45 @@
+# Self-host bundle: the entire platform on one server, no managed cloud.
+# Deploy: docker compose -f infra/docker-compose.yml -f infra/docker-compose.app.yml up -d
+# (this file adds the application images on top of the infra services)
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      VESTA_DEPLOYMENT_MODE: self-host
+      DATABASE_URL: postgresql://vesta:vesta@postgres:5432/vesta?schema=public
+      REDIS_URL: redis://redis:6379
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?set a strong secret in .env}
+      API_PORT: '3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+
+  worker:
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3001
+    depends_on:
+      - api
+    ports:
+      - '3000:3000'

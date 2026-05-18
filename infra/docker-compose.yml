@@ -1,0 +1,58 @@
+# Local infrastructure for development. Apps run on the host via `pnpm dev`.
+# For the full self-host bundle (apps included) see docker-compose.app.yml.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vesta
+      POSTGRES_PASSWORD: vesta
+      POSTGRES_DB: vesta
+    ports:
+      - '5432:5432'
+    volumes:
+      - vesta_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U vesta']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - vesta_redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: vesta
+      MINIO_ROOT_PASSWORD: vesta-secret
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - vesta_minio:/data
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until (mc alias set local http://minio:9000 vesta vesta-secret) do sleep 1; done;
+      mc mb --ignore-existing local/vesta;
+      exit 0;
+      "
+
+volumes:
+  vesta_pg:
+  vesta_redis:
+  vesta_minio:

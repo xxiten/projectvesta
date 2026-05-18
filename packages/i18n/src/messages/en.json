@@ -1,0 +1,14 @@
+{
+  "app.name": "Vesta",
+  "nav.dashboard": "Dashboard",
+  "nav.calendar": "Availability",
+  "nav.reservations": "Reservations",
+  "nav.guests": "Guests",
+  "nav.frontdesk": "Front Desk",
+  "nav.housekeeping": "Housekeeping",
+  "nav.billing": "Invoices & Documents",
+  "nav.reports": "Reports",
+  "nav.settings": "Settings",
+  "action.search": "Search",
+  "action.today": "Today"
+}

@@ -1,0 +1,44 @@
+// Baseline schema. Tenant is the isolation root; every tenant-scoped table
+// carries tenant_id and is protected by row-level security (see the init
+// migration). Domain tables are added per epic (E1+).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime    @default(now()) @map("created_at")
+  users     AppUser[]
+  auditLogs AuditLog[]
+
+  @@map("tenant")
+}
+
+model AppUser {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  email     String
+  createdAt DateTime @default(now()) @map("created_at")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("app_user")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  action    String
+  createdAt DateTime @default(now()) @map("created_at")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("audit_log")
+}

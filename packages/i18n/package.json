@@ -1,0 +1,21 @@
+{
+  "name": "@vesta/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./messages/*": "./src/messages/*"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src",
+    "build": "echo \"source-only package\"",
+    "test": "echo \"no tests\""
+  },
+  "devDependencies": {
+    "@vesta/tsconfig": "workspace:*",
+    "@vesta/eslint-config": "workspace:*"
+  }
+}

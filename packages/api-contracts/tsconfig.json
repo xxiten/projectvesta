@@ -1,0 +1,4 @@
+{
+  "extends": "@vesta/tsconfig/library.json",
+  "include": ["src"]
+}

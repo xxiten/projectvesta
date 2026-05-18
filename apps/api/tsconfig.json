@@ -1,0 +1,15 @@
+{
+  "extends": "@vesta/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["node", "vitest/globals"],
+    "paths": {
+      "@kernel/*": ["src/shared-kernel/*"],
+      "@platform/*": ["src/platform/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "test"]
+}
