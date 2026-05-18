@@ -57,9 +57,28 @@ Then: API docs at `http://localhost:3001/docs`, web at `http://localhost:3000`
 | `pnpm --filter @vesta/api db:seed`        | Seed the demo tenant + sample data                |
 | `pnpm --filter @vesta/api openapi:export` | Write `packages/api-contracts/openapi.json`       |
 
+## Deployment
+
+Images are built once in CI and pushed to GHCR (`.github/workflows/release.yml`).
+Hosts **pull**, never build — immutable, rollback-able, no toolchain on the
+target. See [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md).
+
+```bash
+# on the host (compose files + .env present, one-time: docker login ghcr.io)
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.ghcr.yml \
+  --env-file .env pull
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.ghcr.yml \
+  --env-file .env up -d
+docker compose ... exec api pnpm prisma:deploy   # apply migrations
+```
+
+`infra/docker-compose.app.yml` (build-from-source) still exists for local dev /
+air-gapped self-host.
+
 ## Deployment topologies
 
 - **SaaS (pooled):** multi-tenant, managed infra, `VESTA_DEPLOYMENT_MODE=saas`.
-- **Self-host (single tenant):** the `infra/docker-compose.yml` bundle on the
-  hotel's own server, `VESTA_DEPLOYMENT_MODE=self-host`. Identical code path;
-  row-level security still active (exactly one tenant).
+- **Self-host (single tenant):** same images on the hotel's own server,
+  `VESTA_DEPLOYMENT_MODE=self-host`. Identical code path; row-level security
+  still active (exactly one tenant). Air-gapped sites use `docker save`/load or
+  a local registry instead of GHCR.

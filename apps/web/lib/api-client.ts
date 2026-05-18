@@ -10,7 +10,9 @@ import {
   type TenantDto,
 } from '@vesta/api-contracts';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
+// Same-origin: Next rewrites /api/* to the API service (see next.config.mjs).
+// No build-time API URL → the web image is portable across environments.
+const BASE_URL = '/api';
 
 /** Dev-header scope (placeholder auth — see api auth-port.ts / plan decision 7). */
 export interface Scope {

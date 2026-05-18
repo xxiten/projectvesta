@@ -3,9 +3,8 @@ RUN npm install -g pnpm@9.15.0
 WORKDIR /app
 
 FROM base AS build
-# NEXT_PUBLIC_* is inlined at build time, so it must be set before `next build`.
-ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+# No build-time API URL: the browser calls /api same-origin and Next proxies
+# to API_PROXY_TARGET at runtime (see next.config.mjs). Image is portable.
 COPY pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/web ./apps/web

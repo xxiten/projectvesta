@@ -1,0 +1,46 @@
+# Registry-based deploy: pull prebuilt images from GHCR, no build on the host.
+# Use together with the infra services file:
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.ghcr.yml \
+#     --env-file .env pull
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.ghcr.yml \
+#     --env-file .env up -d
+#
+# Pin a release by setting VESTA_IMAGE_TAG=sha-<shortsha> (rollback = previous
+# tag). Defaults to :latest. Override the prefix for a different registry/owner.
+services:
+  api:
+    image: ${VESTA_IMAGE_PREFIX:-ghcr.io/xxiten/vesta}-api:${VESTA_IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      VESTA_DEPLOYMENT_MODE: ${VESTA_DEPLOYMENT_MODE:-self-host}
+      DATABASE_URL: postgresql://vesta:vesta@postgres:5432/vesta?schema=public
+      REDIS_URL: redis://redis:6379
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?set a strong secret in .env}
+      VESTA_ENABLE_DEV_AUTH: ${VESTA_ENABLE_DEV_AUTH:-false}
+      API_PORT: '3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+
+  worker:
+    image: ${VESTA_IMAGE_PREFIX:-ghcr.io/xxiten/vesta}-worker:${VESTA_IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  web:
+    image: ${VESTA_IMAGE_PREFIX:-ghcr.io/xxiten/vesta}-web:${VESTA_IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      API_PROXY_TARGET: http://api:3001
+    depends_on:
+      - api
+    ports:
+      - '3000:3000'
