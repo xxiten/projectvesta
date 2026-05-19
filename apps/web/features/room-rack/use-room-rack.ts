@@ -39,7 +39,8 @@ export function useRoomRack(
     return () => {
       live = false;
     };
-  }, [scope, propertyId, from, to, nonce]);
+    // Depend on primitive identity, not the scope object reference.
+  }, [scope?.tenantId, scope?.userId, propertyId, from, to, nonce]);
 
   return { ...state, reload };
 }

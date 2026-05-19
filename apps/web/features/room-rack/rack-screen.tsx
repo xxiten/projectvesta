@@ -48,7 +48,12 @@ function filterRack(data: RoomRackDto, q: string): RoomRackDto {
 
 export function RackScreen() {
   const { ctx } = useTenant();
-  const scope = ctx ? { tenantId: ctx.tenantId, userId: ctx.userId } : null;
+  // Stable identity — this object is in effect deps; recreating it every
+  // render would loop the rack fetch forever ("Lädt…").
+  const scope = React.useMemo(
+    () => (ctx ? { tenantId: ctx.tenantId, userId: ctx.userId } : null),
+    [ctx?.tenantId, ctx?.userId],
+  );
 
   const [properties, setProperties] = React.useState<PropertyDto[]>([]);
   const [propertyId, setPropertyId] = React.useState<string | null>(null);
